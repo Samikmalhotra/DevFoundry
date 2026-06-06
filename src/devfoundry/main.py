@@ -5,6 +5,14 @@ import os
 from datetime import datetime
 
 from devfoundry.crew import DevFoundry
+from devfoundry.workspace.manager import Workspace
+from devfoundry.workspace.context import initialize_workspace
+
+project_name = "todo_manager"
+
+workspace = Workspace(project_name)
+
+initialize_workspace(workspace)
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
@@ -12,19 +20,24 @@ warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 os.makedirs('output', exist_ok=True)
 
 requirements = """
-A simple account management system for a trading simulation platform.
-The system should allow users to create an account, deposit funds, and withdraw funds.
-The system should allow users to record that they have bought or sold shares, providing a quantity.
-The system should calculate the total value of the user's portfolio, and the profit or loss from the initial deposit.
-The system should be able to report the holdings of the user at any point in time.
-The system should be able to report the profit or loss of the user at any point in time.
-The system should be able to list the transactions that the user has made over time.
-The system should prevent the user from withdrawing funds that would leave them with a negative balance, or
- from buying more shares than they can afford, or selling shares that they don't have.
- The system has access to a function get_share_price(symbol) which returns the current price of a share, and includes a test implementation that returns fixed prices for AAPL, TSLA, GOOGL.
-"""
-module_name = "accounts.py"
-class_name = "Account"
+Create a todo list management system.
+
+The system should allow users to:
+- Add tasks
+- Remove tasks
+- Mark tasks as completed
+- List all tasks
+- List only completed tasks
+- List only pending tasks
+
+Each task should have:
+- ID
+- Description
+- Completion status
+
+The system should be fully self-contained and testable."""
+module_name = "todo_manager.py"
+class_name = "TodoManager"
 
 
 def run():
@@ -32,13 +45,20 @@ def run():
     Run the research crew.
     """
     inputs = {
-        'requirements': requirements,
-        'module_name': module_name,
-        'class_name': class_name
+        "project_name": project_name,
+        "run_id": workspace.run_id,
+        "requirements": requirements,
+        "module_name": module_name,
+        "class_name": class_name,
+        "ui_framework": "Gradio"
     }
 
     # Create and run the crew
-    result = DevFoundry().crew().kickoff(inputs=inputs)
+    result = DevFoundry(workspace=workspace).crew().kickoff(inputs=inputs)
+    workspace.write(
+    "reports/final_output.md",
+    str(result)
+)
 
 
 if __name__ == "__main__":

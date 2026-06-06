@@ -1,50 +1,251 @@
-design_task:
+analyze_requirements:
   description: >
-    Take the high level requirements described here and prepare a detailed design for the engineer;
-    everything should be in 1 python module, but outline the classes and methods in the module.
-    Here are the requirements: {requirements}
-    IMPORTANT: Only output the design in markdown format, laying out in detail the classes and functions in the module, describing the functionality.
-  expected_output: >
-    A detailed design for the engineer, identifying the classes and functions in the module.
-  agent: engineering_lead
-  output_file: output/{module_name}_design.md
+    Analyze the provided requirements.
 
-code_task:
-  description: >
-    Write a python module that implements the design described by the engineering lead, in order to achieve the requirements.
-    Here are the requirements: {requirements}
+    Requirements:
+    {requirements}
+
+    Produce:
+      - Functional requirements
+      - Non-functional requirements
+      - Assumptions
+      - Risks
+      - Constraints
+      - Acceptance criteria
+      - Edge cases
+      - Open questions
+
   expected_output: >
-    A python module that implements the design and achieves the requirements.
-    IMPORTANT: Output ONLY the raw Python code without any markdown formatting, code block delimiters, or backticks.
-    The output should be valid Python code that can be directly saved to a file and executed.
+    Comprehensive requirements specification document.
+  agent: requirements_analyst
+
+design_architecture:
+  description: >
+    Using the approved requirements specification,
+    produce a complete technical architecture.
+
+    IMPORTANT:
+    - Use the requirements provided through task context.
+    - Do not read requirements files.
+    - Do not assume any documentation files exist.
+
+    Include:
+      - Project structure
+      - Modules
+      - Classes
+      - Interfaces
+      - Function signatures
+      - Data models
+      - Error handling strategy
+      - Testing strategy
+      - Security considerations
+
+  expected_output: >
+    Technical design specification.
+  agent: architecture_lead
+  context:
+    - analyze_requirements
+
+review_architecture:
+  description: >
+    Review the proposed architecture.
+
+    IMPORTANT:
+    - Review ONLY the architecture received from task context.
+    - Do not read any files.
+    - Do not assume architecture documentation files exist.
+
+    Evaluate:
+      - Scalability
+      - Maintainability
+      - Security
+      - Testability
+      - Completeness
+      - Design consistency
+
+    Provide improvement recommendations.
+
+  expected_output: >
+    Architecture review report with approval status.
+  agent: architecture_reviewer
+  context:
+    - design_architecture
+
+implement_backend:
+  description: >
+    Implement the approved architecture.
+
+    IMPORTANT:
+    - Use architecture and review results from task context.
+    - Do not assume any architecture files exist.
+    - Create source files using available tools when needed.
+
+    Produce:
+      - Source code
+      - Project structure
+      - Configuration files
+      - Dependency definitions
+
+  expected_output: >
+    Complete backend implementation.
   agent: backend_engineer
   context:
-    - design_task
-  output_file: output/{module_name}
+    - analyze_requirements
+    - design_architecture
+    - review_architecture
 
-frontend_task:
+review_code:
   description: >
-    Write a gradio UI in a module app.py that demonstrates the given backend class in {module_name}.
-    Assume there is only 1 user, and keep the UI very simple indeed - just a prototype or demo.
-    Here are the requirements: {requirements}
+    Review the generated code.
+
+    IMPORTANT:
+    - Use implementation outputs from task context.
+    - Only read files that actually exist.
+    - Never assume filenames.
+
+    Evaluate:
+      - Correctness
+      - Readability
+      - Performance
+      - Security
+      - Design adherence
+
   expected_output: >
-    A gradio UI in module app.py that demonstrates the given backend class.
-    The file should be ready so that it can be run as-is, in the same directory as the backend module, and it should import the backend class from {module_name}.
-    IMPORTANT: Output ONLY the raw Python code without any markdown formatting, code block delimiters, or backticks.
-    The output should be valid Python code that can be directly saved to a file and executed.
-  agent: frontend_engineer
+    Code review report and recommendations.
+  agent: code_reviewer
   context:
-    - code_task
-  output_file: output/app.py
+    - implement_backend
 
-test_task:
+create_tests:
   description: >
-    Write unit tests for the given backend module {module_name} and create a test_{module_name} in the same directory as the backend module.
+    Create comprehensive tests.
+
+    IMPORTANT:
+    - Use implementation outputs from task context.
+    - Only read files that exist.
+
+    Include:
+      - Unit tests
+      - Integration tests
+      - Error scenarios
+      - Edge cases
+
   expected_output: >
-    A test_{module_name} module that tests the given backend module.
-    IMPORTANT: Output ONLY the raw Python code without any markdown formatting, code block delimiters, or backticks.
-    The output should be valid Python code that can be directly saved to a file and executed.
+    Complete automated test suite.
   agent: test_engineer
   context:
-    - code_task
-  output_file: output/test_{module_name}
+    - implement_backend
+
+validate_build:
+  description: >
+    Analyze build execution results.
+
+    IMPORTANT:
+    - Only analyze outputs available from task context.
+    - Do not assume build logs exist.
+    - Do not assume test reports exist.
+
+    Review:
+      - Test results
+      - Linting results
+      - Type checking results
+      - Runtime failures
+
+    Produce defect reports and recommended fixes.
+
+  expected_output: >
+    Validation report with defects and recommendations.
+  agent: execution_engineer
+  context:
+    - implement_backend
+    - create_tests
+
+fix_implementation:
+  description: >
+    Analyze code review findings and build validation failures.
+    Update the implementation to address all identified issues.
+
+  expected_output: >
+    Updated source code with all identified issues resolved.
+
+  agent: backend_engineer
+
+  context:
+    - review_code
+    - validate_build
+
+security_review:
+  description: >
+    Perform a security review.
+
+    Review:
+      - Authentication
+      - Authorization
+      - Input validation
+      - Secret management
+      - Injection vulnerabilities
+      - Data handling
+
+  expected_output: >
+    Security assessment report.
+  agent: security_engineer
+  context:
+    - implement_backend
+
+generate_ui:
+  description: >
+    Generate a demonstration interface for the application.
+
+    IMPORTANT:
+    - Use implementation outputs from task context.
+    - Do not assume frontend files already exist.
+
+    Preferred UI:
+    {ui_framework}
+
+    Generate all required UI source code.
+
+  expected_output: >
+    Complete frontend implementation.
+  agent: ui_engineer
+  context:
+    - implement_backend
+
+generate_documentation:
+  description: >
+    Generate documentation.
+
+    Include:
+      - README
+      - Architecture overview
+      - Setup instructions
+      - Usage examples
+      - API documentation
+
+  expected_output: >
+    Complete project documentation.
+  agent: technical_writer
+  context:
+    - analyze_requirements
+    - design_architecture
+    - implement_backend
+
+package_project:
+  description: >
+    Assemble the final deliverable.
+
+    Produce:
+      - Final project structure
+      - Packaging configuration
+      - Deployment assets
+      - Documentation bundle
+
+  expected_output: >
+    Production-ready project package.
+  agent: packaging_engineer
+  context:
+    - implement_backend
+    - create_tests
+    - generate_ui
+    - generate_documentation
+    - security_review
