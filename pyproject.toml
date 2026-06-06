@@ -1,0 +1,26 @@
+[project]
+name = "devfoundry"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "crewai>=1.14.6",
+    "crewai-tools>=1.14.6",
+    "gradio>=6.16.0",
+]
+
+[project.scripts]
+src = "devfoundry.main:run"
+run_crew = "devfoundry.main:run"
+train = "devfoundry.main:train"
+replay = "devfoundry.main:replay"
+test = "devfoundry.main:test"
+run_with_trigger = "devfoundry.main:run_with_trigger"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.crewai]
+type = "crew"
