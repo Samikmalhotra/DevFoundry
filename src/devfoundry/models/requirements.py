@@ -1,6 +1,6 @@
-from pydantic import BaseModel
+from devfoundry.models.base import StrictBaseModel
 
-class RequirementsSpec(BaseModel):
+class RequirementsSpec(StrictBaseModel):
     functional_requirements: list[str]
     non_functional_requirements: list[str]
     assumptions: list[str]

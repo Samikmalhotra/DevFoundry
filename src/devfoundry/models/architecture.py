@@ -1,29 +1,31 @@
-from typing import Literal, Optional
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from devfoundry.models.base import StrictBaseModel
 
 
-class ParameterSpec(BaseModel):
+class ParameterSpec(StrictBaseModel):
     name: str
     type: str
     required: bool = True
     description: str
 
 
-class ReturnSpec(BaseModel):
+class ReturnSpec(StrictBaseModel):
     type: str
     description: str
 
 
-class FunctionSpec(BaseModel):
+class FunctionSpec(StrictBaseModel):
     name: str
     description: str
     parameters: list[ParameterSpec] = Field(default_factory=list)
-    returns: Optional[ReturnSpec] = None
+    returns: ReturnSpec | None = None
     raises: list[str] = Field(default_factory=list)
 
 
-class ClassSpec(BaseModel):
+class ClassSpec(StrictBaseModel):
     name: str
     description: str
     responsibilities: list[str] = Field(default_factory=list)
@@ -31,7 +33,7 @@ class ClassSpec(BaseModel):
     dependencies: list[str] = Field(default_factory=list)
 
 
-class ModuleSpec(BaseModel):
+class ModuleSpec(StrictBaseModel):
     name: str
     path: str
     description: str
@@ -41,70 +43,75 @@ class ModuleSpec(BaseModel):
     dependencies: list[str] = Field(default_factory=list)
 
 
-class FieldSpec(BaseModel):
+class FieldSpec(StrictBaseModel):
     name: str
     type: str
     required: bool = True
     description: str
 
 
-class DataModelSpec(BaseModel):
+class ExampleSpec(StrictBaseModel):
+    description: str
+    example_json: str
+
+
+class DataModelSpec(StrictBaseModel):
     name: str
     description: str
-    fields: list[FieldSpec]
+    fields: list[FieldSpec] = Field(default_factory=list)
     validation_rules: list[str] = Field(default_factory=list)
-    examples: list[dict] = Field(default_factory=list)
+    examples: list[ExampleSpec] = Field(default_factory=list)
 
 
-class InterfaceSpec(BaseModel):
+class InterfaceSpec(StrictBaseModel):
     name: str
     description: str
     methods: list[FunctionSpec] = Field(default_factory=list)
 
 
-class ApiSpec(BaseModel):
+class ApiSpec(StrictBaseModel):
     path: str
     method: Literal[
         "GET",
         "POST",
         "PUT",
         "PATCH",
-        "DELETE"
+        "DELETE",
     ]
     description: str
-    request_model: Optional[str] = None
-    response_model: Optional[str] = None
+    request_model: str | None = None
+    response_model: str | None = None
     authentication_required: bool = False
     error_responses: list[str] = Field(default_factory=list)
 
 
-class DependencySpec(BaseModel):
+class DependencySpec(StrictBaseModel):
     package: str
-    version: Optional[str] = None
+    version: str | None = None
     purpose: str
 
 
-class ErrorHandlingSpec(BaseModel):
+class ErrorHandlingSpec(StrictBaseModel):
     strategy: str
     custom_exceptions: list[str] = Field(default_factory=list)
-    retry_policy: Optional[str] = None
-    logging_strategy: Optional[str] = None
+    retry_policy: str | None = None
+    logging_strategy: str | None = None
 
 
-class ValidationSpec(BaseModel):
+class ValidationSpec(StrictBaseModel):
     input_validation: list[str] = Field(default_factory=list)
     business_rules: list[str] = Field(default_factory=list)
     output_validation: list[str] = Field(default_factory=list)
 
 
-class TestingSpec(BaseModel):
+class TestingSpec(StrictBaseModel):
     unit_test_requirements: list[str] = Field(default_factory=list)
     integration_test_requirements: list[str] = Field(default_factory=list)
     edge_cases: list[str] = Field(default_factory=list)
-    coverage_target: Optional[int] = None
+    coverage_target: int | None = None
 
 
-class SecuritySpec(BaseModel):
+class SecuritySpec(StrictBaseModel):
     authentication: list[str] = Field(default_factory=list)
     authorization: list[str] = Field(default_factory=list)
     input_validation: list[str] = Field(default_factory=list)
@@ -113,37 +120,36 @@ class SecuritySpec(BaseModel):
     mitigations: list[str] = Field(default_factory=list)
 
 
-class DeploymentSpec(BaseModel):
+class DeploymentSpec(StrictBaseModel):
     runtime: str
     entrypoint: str
     environment_variables: list[str] = Field(default_factory=list)
     deployment_notes: list[str] = Field(default_factory=list)
 
 
-class ArchitectureSpec(BaseModel):
+class ArchitectureSpec(StrictBaseModel):
     project_name: str
     overview: str
+
     assumptions: list[str] = Field(default_factory=list)
     constraints: list[str] = Field(default_factory=list)
-    project_structure: dict
-    modules: list[ModuleSpec]
-    data_models: list[DataModelSpec]
-    interfaces: list[InterfaceSpec]
-    api_endpoints: list[ApiSpec]
-    dependencies: list[DependencySpec]
+
+    # simple text representation
+    project_structure: list[str] = Field(default_factory=list)
+
+    modules: list[ModuleSpec] = Field(default_factory=list)
+    data_models: list[DataModelSpec] = Field(default_factory=list)
+    interfaces: list[InterfaceSpec] = Field(default_factory=list)
+    api_endpoints: list[ApiSpec] = Field(default_factory=list)
+    dependencies: list[DependencySpec] = Field(default_factory=list)
+
     error_handling: ErrorHandlingSpec
     validation_strategy: ValidationSpec
     testing_strategy: TestingSpec
     security_considerations: SecuritySpec
     deployment: DeploymentSpec
 
-    implementation_plan: list[str] = Field(
-        default_factory=list
-    )
+    implementation_plan: list[str] = Field(default_factory=list)
 
-    acceptance_criteria_mapping: dict[
-        str,
-        list[str]
-    ] = Field(
-        default_factory=dict
-    )
+    # simple text mappings instead of nested dicts
+    acceptance_criteria_mapping: list[str] = Field(default_factory=list)

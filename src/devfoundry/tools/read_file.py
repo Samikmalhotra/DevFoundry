@@ -13,7 +13,7 @@ class ReadFileTool(BaseTool):
     description: str = """
     Read a file from the workspace.
 
-    Use list_files first if you do not know the exact path.
+    If the file is unknown, use list_files first.
     """
 
     _workspace = PrivateAttr()
@@ -33,6 +33,17 @@ class ReadFileTool(BaseTool):
             path,
             max_chars,
         )
+
+        if not path or not str(path).strip():
+            logger.warning(
+                "[READ_FILE] Empty path supplied"
+            )
+
+            return """
+No file path was provided.
+
+Use list_files to discover available files.
+"""
 
         try:
             content = self._workspace.read(path)
@@ -61,77 +72,111 @@ class ReadFileTool(BaseTool):
             result = [
                 f"FILE: {path}",
                 f"SIZE: {original_size} chars",
-                ""
+                "",
             ]
 
             if truncated:
-                result.append(
-                    f"WARNING: File truncated to {max_chars} chars."
-                )
-                result.append("")
+                result.extend([
+                    f"WARNING: File truncated to {max_chars} chars.",
+                    ""
+                ])
 
             result.append(content)
 
             return "\n".join(result)
 
-        except FileNotFoundError:
+        except IsADirectoryError:
 
             logger.warning(
-                "[READ_FILE] File not found: '%s'",
+                "[READ_FILE] '%s' is a directory",
                 path,
             )
 
-            available = self._workspace.list_files()
+            try:
+                files = self._workspace.list_files(path)
 
-            logger.info(
-                "[READ_FILE] Workspace contains %s files",
-                len(available),
+                logger.info(
+                    "[READ_FILE] Directory contains %s files",
+                    len(files),
+                )
+
+                return f"""
+'{path}' is a directory.
+
+Directory contents:
+
+{chr(10).join(files[:50])}
+"""
+
+            except Exception:
+                logger.exception(
+                    "[READ_FILE] Failed listing directory '%s'",
+                    path,
+                )
+
+                return f"""
+'{path}' appears to be a directory.
+
+Unable to list contents.
+"""
+
+        except (
+            FileNotFoundError,
+            OSError,
+            ValueError,
+            RuntimeError,
+        ) as e:
+
+            logger.warning(
+                "[READ_FILE] Unable to locate '%s': %s",
+                path,
+                str(e),
             )
+
+            try:
+                available = self._workspace.list_files()
+
+                logger.info(
+                    "[READ_FILE] Workspace contains %s files",
+                    len(available),
+                )
+
+            except Exception:
+                logger.exception(
+                    "[READ_FILE] Failed listing workspace files"
+                )
+
+                available = []
 
             requested_name = Path(path).name.lower()
 
-            suggestions = [
-                f
-                for f in available
-                if requested_name in f.lower()
-            ]
+            suggestions = []
+
+            if requested_name:
+                suggestions = [
+                    f
+                    for f in available
+                    if requested_name in f.lower()
+                ]
 
             logger.info(
-                "[READ_FILE] Suggestions for '%s': %s",
-                path,
+                "[READ_FILE] Suggestions: %s",
                 suggestions[:10],
             )
 
             return f"""
-File not found: {path}
+File not found.
+
+Requested:
+{path}
 
 Possible matches:
-{chr(10).join(suggestions[:10])}
+{chr(10).join(suggestions[:10]) or 'None'}
 
 Available files:
-{chr(10).join(available[:50])}
-"""
+{chr(10).join(available[:50]) or 'No files available'}
 
-        except IsADirectoryError:
-
-            logger.warning(
-                "[READ_FILE] Agent attempted to read directory '%s'",
-                path,
-            )
-
-            files = self._workspace.list_files(path)
-
-            logger.info(
-                "[READ_FILE] Directory '%s' contains %s files",
-                path,
-                len(files),
-            )
-
-            return f"""
-'{path}' is a directory.
-
-Contents:
-{chr(10).join(files[:50])}
+Use one of the available paths instead of inventing a path.
 """
 
         except Exception as e:
@@ -142,8 +187,14 @@ Contents:
             )
 
             return f"""
-Failed to read file: {path}
+Failed to read file.
 
-Error:
+Path:
+{path}
+
+Exception:
+{type(e).__name__}
+
+Message:
 {str(e)}
 """

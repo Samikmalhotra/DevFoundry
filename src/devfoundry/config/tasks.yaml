@@ -1,260 +1,577 @@
 analyze_requirements:
   description: >
-    AAnalyze the provided requirements and create the requirements artifact.
+    IMPORTANT:
+    Artifacts are the only source of truth.
 
+    ```
+    INPUT:
     Requirements:
     {requirements}
 
-    Produce a file called requirements.json which contains:
-      - Functional requirements
-      - Non-functional requirements
-      - Assumptions
-      - Risks
-      - Constraints
-      - Acceptance criteria
-      - Edge cases
-      - Open questions
-
-
-    MANDATORY Output:
+    REQUIRED OUTPUT FILE:
     artifacts/requirements.json
 
+    CRITICAL OUTPUT REQUIREMENTS:
+    - You MUST create exactly: artifacts/requirements.json
+    - Do NOT create requirements_spec.json
+    - Do NOT create requirements.md
+    - Do NOT create any alternative filename
+    - The task is not complete until artifacts/requirements.json exists
+
+    ARTIFACT CONTRACT:
+    - Persist the artifact using WriteFileTool
+    - Verify the file was successfully written
+    - The artifact is the authoritative source for downstream tasks
+
+    REQUIRED CONTENT:
+    - Functional requirements
+    - Non-functional requirements
+    - Assumptions
+    - Risks
+    - Constraints
+    - Acceptance criteria
+    - Edge cases
+    - Open questions
+
+    STRUCTURED OUTPUT RULES:
+    - Follow the RequirementsSpec schema exactly
+    - Output must be valid JSON
+    - No markdown
+    - No code fences
+    - No explanatory text
+
+    FINAL RESPONSE:
+    Return only:
+    SUCCESS
+    Created:
+    artifacts/requirements.json
+    ```
+
   expected_output: >
-    requirements.json created
+    SUCCESS
+    Created:
+    artifacts/requirements.json
+
   agent: requirements_analyst
 
 design_architecture:
   description: >
-    Create architecture.json from requirements.json.
-    artifacts/requrements.json is your only source of truth, read it and then answer
+    IMPORTANT:
+    Artifacts are the only source of truth.
 
-    Input:
+    ```
+    REQUIRED INPUT FILE:
     artifacts/requirements.json
 
-    Output:
+    REQUIRED OUTPUT FILE:
     artifacts/architecture.json
 
+    CRITICAL OUTPUT REQUIREMENTS:
+    - Read artifacts/requirements.json using ReadFileTool
+    - You MUST create exactly: artifacts/architecture.json
+    - Do NOT create architecture_spec.json
+    - Do NOT create system_design.json
+    - Do NOT create architecture.md
+    - Do NOT create any alternative filename
+    - The task is not complete until artifacts/architecture.json exists
+
+    ARTIFACT CONTRACT:
+    - Verify artifacts/requirements.json exists before proceeding
+    - Persist output using WriteFileTool
+    - Verify output file exists
+
+    STRUCTURED OUTPUT RULES:
+    - Follow ArchitectureSpec exactly
+    - Output must be valid JSON
+    - No markdown
+    - No code fences
+    - No explanatory text
+
+    FINAL RESPONSE:
+    Return only:
+    SUCCESS
+    Created:
+    artifacts/architecture.json
+    ```
+
   expected_output: >
-    architecture.json created
+    SUCCESS
+    Created:
+    artifacts/architecture.json
 
   agent: architecture_lead
-  # context:
-  #   - analyze_requirements
+
+  context:
+    - analyze_requirements
 
 review_architecture:
   description: >
-    Create architecture_review.json from architecture.json.
-    artifacts/architecture.json is your only source of truth, read it and then answer
+    IMPORTANT:
+    Artifacts are the only source of truth.
 
-    Input:
+    ```
+    REQUIRED INPUT FILE:
     artifacts/architecture.json
 
-    Output:
+    REQUIRED OUTPUT FILE:
     artifacts/architecture_review.json
 
+    CRITICAL OUTPUT REQUIREMENTS:
+    - Read artifacts/architecture.json using ReadFileTool
+    - You MUST create exactly: artifacts/architecture_review.json
+    - Do NOT create architecture_review_report.json
+    - Do NOT create review.json
+    - Do NOT create any alternative filename
+    - The task is not complete until artifacts/architecture_review.json exists
+
+    ARTIFACT CONTRACT:
+    - Verify artifacts/architecture.json exists
+    - Persist output using WriteFileTool
+    - Verify output file exists
+
+    REVIEW REQUIREMENTS:
+    - Scalability
+    - Security
+    - Maintainability
+    - Observability
+    - Testability
+    - Deployment readiness
+
+    STRUCTURED OUTPUT RULES:
+    - Follow ReviewReport exactly
+    - Output must be valid JSON
+    - No markdown
+    - No explanatory text
+
+    FINAL RESPONSE:
+    Return only:
+    SUCCESS
+    Created:
+    artifacts/architecture_review.json
+    ```
+
   expected_output: >
-    architecture_review.json created
+    SUCCESS
+    Created:
+    artifacts/architecture_review.json
 
   agent: architecture_reviewer
-  # context:
-  #   - analyze_requirements
-  #   - design_architecture
 
+  context:
+    - design_architecture
 
 implement_backend:
   description: >
-    Create source code from architecture artifacts.
-    Artifacts are your only source of truth.
-    IMPORTANT: only focus on the artifacts to get context
+    IMPORTANT:
+    Artifacts are the only source of truth.
 
-    Input:
-    artifacts/requirements.json
-    artifacts/architecture.json
-    artifacts/architecture_review.json
+    ```
+    REQUIRED INPUT FILES:
+    - artifacts/requirements.json
+    - artifacts/architecture.json
+    - artifacts/architecture_review.json
 
-    Output:
+    REQUIRED OUTPUT LOCATION:
+    src/**
+
+    CRITICAL OUTPUT REQUIREMENTS:
+    - Read all required artifacts using ReadFileTool
+    - Do not rely on manager summaries
+    - Do not rely on task context
+    - Generate production-quality source code
+    - Write all source files using WriteFileTool
+
+    IMPLEMENTATION RULES:
+    - Follow architecture exactly
+    - Implement all required modules
+    - Implement APIs
+    - Implement data models
+    - Implement business logic
+    - Avoid placeholders
+    - Avoid TODOs
+
+    FINAL RESPONSE:
+    Return only:
+    SUCCESS
+    Created:
     src/
+    ```
 
   expected_output: >
-    implementation completed
+    SUCCESS
+    Created:
+    src/
 
   agent: backend_engineer
-  # context:
-  #   - analyze_requirements
-  #   - design_architecture
-  #   - review_architecture
+
+  context:
+    - design_architecture
+    - review_architecture
 
 review_code:
   description: >
-    Create code_review.json from generated source code.
-    The generated src/ folder is your only source of truth.
+    IMPORTANT:
+    Artifacts are the only source of truth.
 
-    Input:
-    src/
+    ```
+    REQUIRED INPUTS:
+    - src/**
+    - artifacts/architecture.json
 
-    Output:
+    REQUIRED OUTPUT FILE:
     artifacts/code_review.json
 
+    CRITICAL OUTPUT REQUIREMENTS:
+    - Read source files directly
+    - Read architecture directly
+    - Never rely on delegated summaries
+    - Create exactly: artifacts/code_review.json
+    - No alternative filenames permitted
+
+    REVIEW REQUIREMENTS:
+    - Architecture compliance
+    - Correctness
+    - Maintainability
+    - Security
+    - Performance
+    - Code quality
+
+    STRUCTURED OUTPUT RULES:
+    - Follow ReviewReport exactly
+    - Output valid JSON
+    - No markdown
+
+    FINAL RESPONSE:
+    Return only:
+    SUCCESS
+    Created:
+    artifacts/code_review.json
+    ```
+
   expected_output: >
-    code review completed
+    SUCCESS
+    Created:
+    artifacts/code_review.json
 
   agent: code_reviewer
-  # context:
-  #   - implement_backend
+
+  context:
+    - implement_backend
 
 create_tests:
   description: >
-    Create automated tests for the implementation.
-    The generated src/ folder is your only source of truth.
-    Input:
-    src/
+    IMPORTANT:
+    Artifacts are the only source of truth.
 
-    Output:
+    ```
+    REQUIRED INPUT:
+    src/**
+
+    REQUIRED OUTPUT:
+    tests/**
+
+    CRITICAL OUTPUT REQUIREMENTS:
+    - Read implementation directly
+    - Generate tests using WriteFileTool
+    - Create all required test files
+
+    TEST REQUIREMENTS:
+    - Unit tests
+    - Integration tests
+    - Edge case tests
+    - Error handling tests
+
+    FINAL RESPONSE:
+    Return only:
+    SUCCESS
+    Created:
     tests/
+    ```
 
   expected_output: >
-    tests generated
+    SUCCESS
+    Created:
+    tests/
+
   agent: test_engineer
-  # context:
-  #   - implement_backend
+
+  context:
+    - implement_backend
 
 validate_build:
   description: >
-    Execute validation and create validation_report.json.
-    Analyze build execution results.
-
     IMPORTANT:
-    - Do not assume build logs exist.
-    - Do not assume test reports exist.
+    Artifacts are the only source of truth.
 
-    Input:
-    src/
-    tests/
+    ```
+    REQUIRED INPUTS:
+    - src/**
+    - tests/**
 
-    Output:
+    REQUIRED OUTPUT FILE:
     artifacts/validation_report.json
 
-    Review:
-      - Test results
-      - Linting results
-      - Type checking results
-      - Runtime failures
+    CRITICAL OUTPUT REQUIREMENTS:
+    - Create exactly: artifacts/validation_report.json
+    - No alternative filenames permitted
+    - Persist using WriteFileTool
 
-    Produce defect reports and recommended fixes.
+    VALIDATION REQUIREMENTS:
+    - Build validation
+    - Test validation
+    - Lint validation
+    - Type-check validation
+    - Runtime validation
+
+    STRUCTURED OUTPUT RULES:
+    - Follow ValidationReport exactly
+    - Output valid JSON
+    - No markdown
+
+    FINAL RESPONSE:
+    Return only:
+    SUCCESS
+    Created:
+    artifacts/validation_report.json
+    ```
 
   expected_output: >
-    artifacts/validation_report.json is created
+    SUCCESS
+    Created:
+    artifacts/validation_report.json
+
   agent: execution_engineer
-  # context:
-  #   - implement_backend
-  #   - create_tests
+
+  context:
+    - implement_backend
+    - create_tests
 
 fix_implementation:
   description: >
-    Resolve issues identified in reviews and validation reports.
+    IMPORTANT:
+    Artifacts are the only source of truth.
 
-    Input:
-    artifacts/code_review.json
-    artifacts/validation_report.json
+    ```
+    REQUIRED INPUT FILES:
+    - artifacts/code_review.json
+    - artifacts/validation_report.json
 
-    Output:
+    REQUIRED OUTPUT:
+    src/**
+
+    CRITICAL OUTPUT REQUIREMENTS:
+    - Read review findings directly
+    - Read validation findings directly
+    - Update implementation files
+    - Persist all changes using WriteFileTool
+
+    FIX REQUIREMENTS:
+    - Resolve review findings
+    - Resolve validation findings
+    - Preserve architecture compliance
+
+    FINAL RESPONSE:
+    Return only:
+    SUCCESS
+    Updated:
     src/
+    ```
 
   expected_output: >
-    issues resolved
+    SUCCESS
+    Updated:
+    src/
 
   agent: backend_engineer
 
-  # context:
-  #   - review_code
-  #   - validate_build
+  context:
+    - review_code
+    - validate_build
 
 security_review:
   description: >
-    Create security_review.json from the implementation.
+    IMPORTANT:
+    Artifacts are the only source of truth.
 
-    Input:
-    src/
+    ```
+    REQUIRED INPUT:
+    src/**
 
-    Output:
+    REQUIRED OUTPUT FILE:
     artifacts/security_review.json
 
+    CRITICAL OUTPUT REQUIREMENTS:
+    - Create exactly: artifacts/security_review.json
+    - No alternative filenames permitted
+
+    SECURITY REVIEW REQUIREMENTS:
+    - Authentication
+    - Authorization
+    - Input validation
+    - Secrets management
+    - Dependency security
+    - API security
+    - Configuration security
+
+    STRUCTURED OUTPUT RULES:
+    - Follow SecurityReviewReport exactly
+    - Output valid JSON
+    - No markdown
+
+    FINAL RESPONSE:
+    Return only:
+    SUCCESS
+    Created:
+    artifacts/security_review.json
+    ```
+
   expected_output: >
-    security review completed and artifacts/security_review.json is generated
+    SUCCESS
+    Created:
+    artifacts/security_review.json
+
   agent: security_engineer
-  # context:
-  #   - implement_backend
+
+  context:
+    - implement_backend
 
 generate_ui:
   description: >
-    Generate a demonstration interface for the application.
-
     IMPORTANT:
-    - Use implementation outputs from task context.
-    - Do not assume frontend files already exist.
+    Artifacts are the only source of truth.
 
-    Preferred UI:
+    ```
+    REQUIRED INPUTS:
+    - artifacts/architecture.json
+    - src/**
+
+    UI FRAMEWORK:
     {ui_framework}
 
-    Generate all required UI source code.
+    REQUIRED OUTPUT:
+    ui/**
+
+    CRITICAL OUTPUT REQUIREMENTS:
+    - Read architecture directly
+    - Read implementation directly
+    - Follow backend contracts exactly
+    - Generate complete UI source files
+
+    FINAL RESPONSE:
+    Return only:
+    SUCCESS
+    Created:
+    ui/
+    ```
 
   expected_output: >
-    Complete frontend implementation.
+    SUCCESS
+    Created:
+    ui/
+
   agent: ui_engineer
+
   context:
     - implement_backend
 
 generate_documentation:
   description: >
-    Create project documentation from all artifacts and source code.
+    IMPORTANT:
+    Artifacts are the only source of truth.
 
-    Input:
-    artifacts/
-    src/
+    ```
+    REQUIRED INPUTS:
+    - artifacts/**
+    - src/**
+    - tests/**
 
-    Output:
+    REQUIRED OUTPUTS:
+    - README.md
+    - docs/**
+
+    CRITICAL OUTPUT REQUIREMENTS:
+    - Read artifacts directly
+    - Read source code directly
+    - Generate documentation using WriteFileTool
+
+    DOCUMENTATION REQUIREMENTS:
+    - Setup guide
+    - Usage guide
+    - Architecture overview
+    - API documentation
+    - Testing guide
+    - Security considerations
+
+    FINAL RESPONSE:
+    Return only:
+    SUCCESS
+    Created:
     README.md
-
-    Include:
-      - README
-      - Architecture overview
-      - Setup instructions
-      - Usage examples
-      - API documentation
+    docs/
+    ```
 
   expected_output: >
-    Complete project documentation.
+    SUCCESS
+    Created:
+    README.md
+    docs/
+
   agent: technical_writer
-  # context:
-  #   - analyze_requirements
-  #   - design_architecture
-  #   - implement_backend
+
+  context:
+    - analyze_requirements
+    - design_architecture
+    - implement_backend
+    - create_tests
+    - security_review
 
 package_project:
   description: >
-    Assemble the final deliverable.
+    IMPORTANT:
+    Artifacts are the only source of truth.
 
-    Produce:
-      - Final project structure
-      - Packaging configuration
-      - Deployment assets
-      - Documentation bundle
+    ```
+    REQUIRED INPUTS:
+    - src/**
+    - tests/**
+    - artifacts/**
+    - README.md
+    - docs/**
+    - ui/**
 
-    Input:
-    src/
-    tests/
-    artifacts/
-    README.md
+    REQUIRED OUTPUT:
+    release/**
 
-    Output:
+    CRITICAL OUTPUT REQUIREMENTS:
+    - Verify all required artifacts exist
+    - Verify documentation exists
+    - Verify source code exists
+    - Generate final release package
+
+    PACKAGE REQUIREMENTS:
+    - Deployment assets
+    - Packaging configuration
+    - Documentation bundle
+    - Release structure
+    - Delivery assets
+
+    FINAL RESPONSE:
+    Return only:
+    SUCCESS
+    Created:
     release/
+    ```
 
   expected_output: >
-    Production-ready project package.
+    SUCCESS
+    Created:
+    release/
+
   agent: packaging_engineer
-  # context:
-  #   - implement_backend
-  #   - create_tests
-  #   - generate_ui
-  #   - generate_documentation
-  #   - security_review
+
+  context:
+    - implement_backend
+    - create_tests
+    - generate_ui
+    - generate_documentation
+    - security_review

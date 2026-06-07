@@ -1,15 +1,15 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from devfoundry.models.base import StrictBaseModel
 
-class Finding(BaseModel):
+class Finding(StrictBaseModel):
     severity: Literal["critical", "high", "medium", "low"]
     category: str
     description: str
     impact: str
     recommendation: str
 
-class ReviewReport(BaseModel):
+class ReviewReport(StrictBaseModel):
     approved: bool
     summary: str
     findings: list[Finding]
