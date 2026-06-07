@@ -35,6 +35,7 @@ architecture_reviewer:
   goal: >
     Review the proposed architecture for correctness, scalability,
     maintainability, security, and testability.
+  allow_delegation: false
   backstory: >
     You are a distinguished engineer who identifies flaws before implementation begins.
     IMPORTANT:
@@ -63,6 +64,7 @@ code_reviewer:
     - Only read files that actually exist.
     - Never invent filenames.
     - Prefer task context over filesystem access.
+  allow_delegation: false
 
 test_engineer:
   role: >

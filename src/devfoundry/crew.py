@@ -51,6 +51,7 @@ class DevFoundry:
         return Agent(
             config=self.agents_config["requirements_analyst"],
             verbose=True,
+            tools = self.rw_tools()
         )
 
     @agent
@@ -66,7 +67,7 @@ class DevFoundry:
         return Agent(
             config=self.agents_config["architecture_reviewer"],
             verbose=True,
-            tools=self.read_tools(),
+            tools=self.rw_tools(),
         )
 
     @agent
@@ -86,7 +87,7 @@ class DevFoundry:
         return Agent(
             config=self.agents_config["code_reviewer"],
             verbose=True,
-            tools=self.read_tools(),
+            tools=self.rw_tools(),
         )
 
     @agent
@@ -110,7 +111,7 @@ class DevFoundry:
             code_execution_mode="safe",
             max_execution_time=500,
             max_retry_limit=3,
-            tools=self.read_tools(),
+            tools=self.rw_tools(),
         )
 
     @agent
@@ -118,7 +119,7 @@ class DevFoundry:
         return Agent(
             config=self.agents_config["security_engineer"],
             verbose=True,
-            tools=self.read_tools(),
+            tools=self.rw_tools(),
         )
 
     @agent
@@ -154,7 +155,6 @@ class DevFoundry:
         return Task(
             config=self.tasks_config["analyze_requirements"],
             output_pydantic=RequirementsSpec,
-            output_file="requirements/requirements.json",
         )
 
     @task
@@ -162,7 +162,6 @@ class DevFoundry:
         return Task(
             config=self.tasks_config["design_architecture"],
             output_pydantic=ArchitectureSpec,
-            output_file="architecture/architecture.json",
         )
 
     @task
@@ -170,7 +169,6 @@ class DevFoundry:
         return Task(
             config=self.tasks_config["review_architecture"],
             output_pydantic=ReviewReport,
-            output_file="reports/architecture_review.json",
         )
 
     @task
@@ -184,7 +182,6 @@ class DevFoundry:
         return Task(
             config=self.tasks_config["review_code"],
             output_pydantic=ReviewReport,
-            output_file="reports/code_review.json",
         )
 
     @task
@@ -197,7 +194,6 @@ class DevFoundry:
     def validate_build(self) -> Task:
         return Task(
             config=self.tasks_config["validate_build"],
-            output_file="reports/validation_report.json",
         )
 
     @task
@@ -210,7 +206,6 @@ class DevFoundry:
     def security_review(self) -> Task:
         return Task(
             config=self.tasks_config["security_review"],
-            output_file="reports/security_review.json",
         )
 
     @task
@@ -289,5 +284,5 @@ class DevFoundry:
             verbose=True,
             memory=False,
             cache=True,
-            planning=True,
+            planning=False,
         )

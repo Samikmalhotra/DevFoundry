@@ -1,11 +1,11 @@
 analyze_requirements:
   description: >
-    Analyze the provided requirements.
+    AAnalyze the provided requirements and create the requirements artifact.
 
     Requirements:
     {requirements}
 
-    Produce:
+    Produce a file called requirements.json which contains:
       - Functional requirements
       - Non-functional requirements
       - Assumptions
@@ -15,135 +15,124 @@ analyze_requirements:
       - Edge cases
       - Open questions
 
+
+    MANDATORY Output:
+    artifacts/requirements.json
+
   expected_output: >
-    Comprehensive requirements specification document.
+    requirements.json created
   agent: requirements_analyst
 
 design_architecture:
   description: >
-    Using the approved requirements specification,
-    produce a complete technical architecture.
+    Create architecture.json from requirements.json.
+    artifacts/requrements.json is your only source of truth, read it and then answer
 
-    IMPORTANT:
-    - Use the requirements provided through task context.
-    - Do not read requirements files.
-    - Do not assume any documentation files exist.
+    Input:
+    artifacts/requirements.json
 
-    Include:
-      - Project structure
-      - Modules
-      - Classes
-      - Interfaces
-      - Function signatures
-      - Data models
-      - Error handling strategy
-      - Testing strategy
-      - Security considerations
+    Output:
+    artifacts/architecture.json
 
   expected_output: >
-    Technical design specification.
+    architecture.json created
+
   agent: architecture_lead
-  context:
-    - analyze_requirements
+  # context:
+  #   - analyze_requirements
 
 review_architecture:
   description: >
-    Review the proposed architecture.
+    Create architecture_review.json from architecture.json.
+    artifacts/architecture.json is your only source of truth, read it and then answer
 
-    IMPORTANT:
-    - Review ONLY the architecture received from task context.
-    - Do not read any files.
-    - Do not assume architecture documentation files exist.
+    Input:
+    artifacts/architecture.json
 
-    Evaluate:
-      - Scalability
-      - Maintainability
-      - Security
-      - Testability
-      - Completeness
-      - Design consistency
-
-    Provide improvement recommendations.
+    Output:
+    artifacts/architecture_review.json
 
   expected_output: >
-    Architecture review report with approval status.
+    architecture_review.json created
+
   agent: architecture_reviewer
-  context:
-    - design_architecture
+  # context:
+  #   - analyze_requirements
+  #   - design_architecture
+
 
 implement_backend:
   description: >
-    Implement the approved architecture.
+    Create source code from architecture artifacts.
+    Artifacts are your only source of truth.
+    IMPORTANT: only focus on the artifacts to get context
 
-    IMPORTANT:
-    - Use architecture and review results from task context.
-    - Do not assume any architecture files exist.
-    - Create source files using available tools when needed.
+    Input:
+    artifacts/requirements.json
+    artifacts/architecture.json
+    artifacts/architecture_review.json
 
-    Produce:
-      - Source code
-      - Project structure
-      - Configuration files
-      - Dependency definitions
+    Output:
+    src/
 
   expected_output: >
-    Complete backend implementation.
+    implementation completed
+
   agent: backend_engineer
-  context:
-    - analyze_requirements
-    - design_architecture
-    - review_architecture
+  # context:
+  #   - analyze_requirements
+  #   - design_architecture
+  #   - review_architecture
 
 review_code:
   description: >
-    Review the generated code.
+    Create code_review.json from generated source code.
+    The generated src/ folder is your only source of truth.
 
-    IMPORTANT:
-    - Use implementation outputs from task context.
-    - Only read files that actually exist.
-    - Never assume filenames.
+    Input:
+    src/
 
-    Evaluate:
-      - Correctness
-      - Readability
-      - Performance
-      - Security
-      - Design adherence
+    Output:
+    artifacts/code_review.json
 
   expected_output: >
-    Code review report and recommendations.
+    code review completed
+
   agent: code_reviewer
-  context:
-    - implement_backend
+  # context:
+  #   - implement_backend
 
 create_tests:
   description: >
-    Create comprehensive tests.
+    Create automated tests for the implementation.
+    The generated src/ folder is your only source of truth.
+    Input:
+    src/
 
-    IMPORTANT:
-    - Use implementation outputs from task context.
-    - Only read files that exist.
-
-    Include:
-      - Unit tests
-      - Integration tests
-      - Error scenarios
-      - Edge cases
+    Output:
+    tests/
 
   expected_output: >
-    Complete automated test suite.
+    tests generated
   agent: test_engineer
-  context:
-    - implement_backend
+  # context:
+  #   - implement_backend
 
 validate_build:
   description: >
+    Execute validation and create validation_report.json.
     Analyze build execution results.
 
     IMPORTANT:
-    - Only analyze outputs available from task context.
     - Do not assume build logs exist.
     - Do not assume test reports exist.
+
+    Input:
+    src/
+    tests/
+
+    Output:
+    artifacts/validation_report.json
 
     Review:
       - Test results
@@ -154,43 +143,47 @@ validate_build:
     Produce defect reports and recommended fixes.
 
   expected_output: >
-    Validation report with defects and recommendations.
+    artifacts/validation_report.json is created
   agent: execution_engineer
-  context:
-    - implement_backend
-    - create_tests
+  # context:
+  #   - implement_backend
+  #   - create_tests
 
 fix_implementation:
   description: >
-    Analyze code review findings and build validation failures.
-    Update the implementation to address all identified issues.
+    Resolve issues identified in reviews and validation reports.
+
+    Input:
+    artifacts/code_review.json
+    artifacts/validation_report.json
+
+    Output:
+    src/
 
   expected_output: >
-    Updated source code with all identified issues resolved.
+    issues resolved
 
   agent: backend_engineer
 
-  context:
-    - review_code
-    - validate_build
+  # context:
+  #   - review_code
+  #   - validate_build
 
 security_review:
   description: >
-    Perform a security review.
+    Create security_review.json from the implementation.
 
-    Review:
-      - Authentication
-      - Authorization
-      - Input validation
-      - Secret management
-      - Injection vulnerabilities
-      - Data handling
+    Input:
+    src/
+
+    Output:
+    artifacts/security_review.json
 
   expected_output: >
-    Security assessment report.
+    security review completed and artifacts/security_review.json is generated
   agent: security_engineer
-  context:
-    - implement_backend
+  # context:
+  #   - implement_backend
 
 generate_ui:
   description: >
@@ -213,7 +206,14 @@ generate_ui:
 
 generate_documentation:
   description: >
-    Generate documentation.
+    Create project documentation from all artifacts and source code.
+
+    Input:
+    artifacts/
+    src/
+
+    Output:
+    README.md
 
     Include:
       - README
@@ -225,10 +225,10 @@ generate_documentation:
   expected_output: >
     Complete project documentation.
   agent: technical_writer
-  context:
-    - analyze_requirements
-    - design_architecture
-    - implement_backend
+  # context:
+  #   - analyze_requirements
+  #   - design_architecture
+  #   - implement_backend
 
 package_project:
   description: >
@@ -240,12 +240,21 @@ package_project:
       - Deployment assets
       - Documentation bundle
 
+    Input:
+    src/
+    tests/
+    artifacts/
+    README.md
+
+    Output:
+    release/
+
   expected_output: >
     Production-ready project package.
   agent: packaging_engineer
-  context:
-    - implement_backend
-    - create_tests
-    - generate_ui
-    - generate_documentation
-    - security_review
+  # context:
+  #   - implement_backend
+  #   - create_tests
+  #   - generate_ui
+  #   - generate_documentation
+  #   - security_review
