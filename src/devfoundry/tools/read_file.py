@@ -27,6 +27,36 @@ class ReadFileTool(BaseTool):
         path: str,
         max_chars: int = 10000,
     ) -> str:
+        from devfoundry.observability.event_bus import event_bus
+        from devfoundry.observability import event_types
+
+        if event_bus.is_run_cancelled():
+            raise RuntimeError("Run cancelled by user")
+
+        event_bus.publish(event_types.TOOL_STARTED, {
+            "tool": "read_file",
+            "path": path
+        })
+        try:
+            res = self._run_internal(path, max_chars)
+            event_bus.publish(event_types.TOOL_COMPLETED, {
+                "tool": "read_file",
+                "path": path
+            })
+            return res
+        except Exception as e:
+            event_bus.publish(event_types.TOOL_FAILED, {
+                "tool": "read_file",
+                "path": path,
+                "error": str(e)
+            })
+            raise e
+
+    def _run_internal(
+        self,
+        path: str,
+        max_chars: int = 10000,
+    ) -> str:
 
         logger.info(
             "[READ_FILE] Requested path='%s' max_chars=%s",

@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DevFoundry — Mission Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #090c10;
+    --surface:   #0e1218;
+    --surface2:  #141920;
+    --border:    rgba(255,255,255,0.07);
+    --border2:   rgba(255,255,255,0.12);
+    --text:      #e8eaf0;
+    --muted:     #4a5160;
+    --dim:       #2a3040;
+
+    --idle:      #1e2530;
+    --idle-t:    #3a4455;
+    --run:       #0d2a1f;
+    --run-t:     #00e87a;
+    --run-glow:  rgba(0,232,122,0.15);
+    --done:      #0a1e30;
+    --done-t:    #38b6ff;
+    --done-glow: rgba(56,182,255,0.12);
+    --wait:      #1a1420;
+    --wait-t:    #7c6aff;
+    --err:       #2a0d0d;
+    --err-t:     #ff4444;
+
+    --accent:    #00e87a;
+    --accent2:   #38b6ff;
+    --accent3:   #7c6aff;
+    --warn:      #ffb020;
+
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; }
+
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 80% 40% at 50% -10%, rgba(0,232,122,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 30% at 90% 80%, rgba(56,182,255,0.04) 0%, transparent 50%);
+    overflow-x: hidden;
+  }
+
+  /* ── SCANLINE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none; z-index: 1000;
+  }
+
+  /* ── LAYOUT ── */
+  .app { max-width: 1400px; margin: 0 auto; padding: 24px 28px 60px; }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 32px; padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-block { display: flex; align-items: center; gap: 14px; }
+  .logo-mark {
+    width: 42px; height: 42px; border-radius: 10px;
+    background: linear-gradient(135deg, #00e87a22, #38b6ff22);
+    border: 1px solid rgba(0,232,122,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 18px; font-weight: 700;
+    color: var(--accent);
+    box-shadow: 0 0 20px rgba(0,232,122,0.15);
+  }
+  .logo-text { line-height: 1; }
+  .logo-name { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: #fff; }
+  .logo-sub { font-size: 11px; font-family: var(--mono); color: var(--muted); letter-spacing: 0.1em; margin-top: 3px; text-transform: uppercase; }
+
+  .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+  .crew-status {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+  .status-dot.running { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: breathe 1.5s ease-in-out infinite; }
+  .status-dot.done    { background: var(--accent2); box-shadow: 0 0 8px var(--accent2); }
+  .status-dot.error   { background: var(--err-t); box-shadow: 0 0 8px var(--err-t); }
+  .status-dot.cancelled { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
+
+  .run-controls { display: flex; gap: 10px; align-items: center; }
+
+  /* ── INPUT ROW ── */
+  .input-row {
+    display: flex; gap: 10px; margin-bottom: 28px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px;
+  }
+  .input-row input {
+    flex: 1; background: transparent; border: none; outline: none;
+    font-family: var(--mono); font-size: 13px; color: var(--text);
+    placeholder-color: var(--muted);
+  }
+  .input-row input::placeholder { color: var(--muted); }
+  .input-row label { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; align-self: center; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: var(--mono); font-size: 12px; font-weight: 700;
+    padding: 9px 20px; border-radius: 8px; border: 1px solid;
+    cursor: pointer; transition: all 0.15s; text-transform: uppercase; letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: rgba(0,232,122,0.1); border-color: rgba(0,232,122,0.4); color: var(--accent);
+  }
+  .btn-primary:hover:not(:disabled) { background: rgba(0,232,122,0.18); box-shadow: 0 0 16px rgba(0,232,122,0.2); }
+  .btn-danger {
+    background: rgba(255,68,68,0.1); border-color: rgba(255,68,68,0.4); color: var(--err-t);
+  }
+  .btn-danger:hover:not(:disabled) { background: rgba(255,68,68,0.18); box-shadow: 0 0 16px rgba(255,68,68,0.2); }
+  .btn-ghost { background: transparent; border-color: var(--border2); color: var(--muted); }
+  .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: rgba(255,255,255,0.25); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ── MAIN GRID ── */
+  .main-grid { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+
+  /* ── PIPELINE ── */
+  .pipeline-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .section-head {
+    font-family: var(--mono); font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.15em; color: var(--muted); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .pipeline { display: flex; flex-direction: column; gap: 4px; }
+
+  /* ── AGENT ROW ── */
+  .agent-row {
+    position: relative;
+    display: grid; grid-template-columns: 32px 1fr auto;
+    align-items: stretch;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden;
+    transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+    min-height: 52px;
+  }
+  .agent-row::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--idle-t); transition: background 0.3s;
+    border-radius: 10px 0 0 10px;
+  }
+  .agent-row.running  { background: var(--run);  border-color: rgba(0,232,122,0.25); box-shadow: 0 0 20px var(--run-glow); }
+  .agent-row.running::before  { background: var(--run-t); box-shadow: 0 0 8px var(--run-t); }
+  .agent-row.done     { background: var(--done); border-color: rgba(56,182,255,0.2); }
+  .agent-row.done::before     { background: var(--done-t); }
+  .agent-row.waiting  { background: var(--wait); border-color: rgba(124,106,255,0.2); }
+  .agent-row.waiting::before  { background: var(--wait-t); }
+  .agent-row.error    { background: var(--err);  border-color: rgba(255,68,68,0.3); }
+  .agent-row.error::before    { background: var(--err-t); }
+
+  .agent-index {
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    padding-left: 8px;
+  }
+
+  .agent-main { padding: 10px 12px; min-width: 0; }
+  .agent-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .agent-name {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .agent-role { font-family: var(--mono); font-size: 10px; color: var(--muted); white-space: nowrap; }
+
+  .agent-output {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    line-height: 1.55; min-height: 16px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: color 0.3s;
+  }
+  .agent-row.running  .agent-output { color: rgba(0,232,122,0.8); }
+  .agent-row.done     .agent-output { color: rgba(56,182,255,0.7); }
+  .agent-row.waiting  .agent-output { color: rgba(124,106,255,0.7); }
+  .agent-row.error    .agent-output { color: var(--err-t); }
+
+  .cursor { display: inline-block; width: 6px; height: 11px; background: var(--run-t); margin-left: 2px; animation: blink 0.7s step-end infinite; vertical-align: text-bottom; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+  .agent-meta { padding: 10px 14px 10px 8px; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 6px; min-width: 90px; }
+  .agent-badge {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 4px; text-transform: uppercase;
+    letter-spacing: 0.06em; white-space: nowrap;
+  }
+  .badge-idle    { background: rgba(58,68,85,0.4);     color: var(--idle-t); }
+  .badge-running { background: rgba(0,232,122,0.12);   color: var(--run-t);  }
+  .badge-done    { background: rgba(56,182,255,0.1);   color: var(--done-t); }
+  .badge-waiting { background: rgba(124,106,255,0.1);  color: var(--wait-t); }
+  .badge-error   { background: rgba(255,68,68,0.1);    color: var(--err-t);  }
+
+  .agent-timer { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  /* ── CONNECTOR ── */
+  .connector {
+    width: 2px; height: 12px; background: var(--border);
+    margin: 0 auto; transition: background 0.3s;
+  }
+  .connector.active { background: rgba(0,232,122,0.35); }
+  .connector.done   { background: rgba(56,182,255,0.3); }
+
+  /* ── TASK GROUPS ── */
+  .task-group {
+    border: 1px solid var(--border); border-radius: 10px;
+    overflow: hidden; margin-bottom: 4px;
+  }
+  .task-group-header {
+    padding: 8px 14px; font-family: var(--mono); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--muted); border-bottom: 1px solid var(--border);
+    background: var(--surface2); cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    user-select: none;
+  }
+  .task-group-header:hover { background: var(--surface); }
+  .task-group-header .tg-title { display: flex; align-items: center; gap: 8px; }
+  .tg-step {
+    font-size: 10px; font-family: var(--mono);
+    padding: 2px 6px; border-radius: 3px;
+    background: rgba(124,106,255,0.12); color: var(--wait-t);
+  }
+  .tg-step.active { background: rgba(0,232,122,0.12); color: var(--run-t); animation: breathe 1.5s ease-in-out infinite; }
+  .tg-step.done   { background: rgba(56,182,255,0.1);  color: var(--done-t); }
+  .tg-chevron { font-size: 10px; transition: transform 0.2s; }
+  .task-group-body { display: none; }
+  .task-group-body.open { display: block; }
+
+  /* ── ARTIFACT LIST ── */
+  .artifact-entry {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px; border-bottom: 1px solid var(--border);
+    font-family: var(--mono); font-size: 11px;
+  }
+  .artifact-entry:last-child { border-bottom: none; }
+  .artifact-icon { font-size: 13px; }
+  .artifact-path { color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .artifact-size { color: var(--muted); white-space: nowrap; }
+  .artifact-status { font-size: 9px; padding: 2px 6px; border-radius: 3px; }
+  .as-pending  { background: rgba(255,176,32,0.1);   color: var(--warn); }
+  .as-writing  { background: rgba(0,232,122,0.1);    color: var(--run-t); animation: breathe 1s infinite; }
+  .as-written  { background: rgba(56,182,255,0.08);  color: var(--done-t); }
+
+  /* ── SIDEBAR ── */
+  .sidebar { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 20px; }
+
+  /* ── STAT CARDS ── */
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px;
+  }
+  .stat-label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 6px; }
+  .stat-value { font-family: var(--mono); font-size: 22px; font-weight: 700; line-height: 1; }
+  .stat-value.green  { color: var(--accent); }
+  .stat-value.blue   { color: var(--accent2); }
+  .stat-value.purple { color: var(--accent3); }
+  .stat-value.warn   { color: var(--warn); }
+
+  /* ── LOG PANEL ── */
+  .log-panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden;
+  }
+  .log-header {
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface2);
+  }
+  .log-title { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+  .log-clear { font-family: var(--mono); font-size: 9px; color: var(--muted); cursor: pointer; padding: 2px 6px; border-radius: 3px; border: 1px solid var(--border); background: transparent; }
+  .log-clear:hover { color: var(--text); }
+
+  .log-body { height: 280px; overflow-y: auto; padding: 8px 0; }
+  .log-body::-webkit-scrollbar { width: 4px; }
+  .log-body::-webkit-scrollbar-track { background: transparent; }
+  .log-body::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
+
+  .log-entry {
+    display: grid; grid-template-columns: 48px 1fr;
+    gap: 8px; padding: 3px 12px;
+    font-family: var(--mono); font-size: 11px; line-height: 1.55;
+    transition: background 0.1s;
+  }
+  .log-entry:hover { background: rgba(255,255,255,0.02); }
+  .log-ts { color: var(--dim); font-size: 10px; align-self: center; }
+  .log-msg { color: var(--muted); }
+  .log-entry.info .log-msg  { color: rgba(255,255,255,0.6); }
+  .log-entry.start .log-msg { color: var(--accent); }
+  .log-entry.done .log-msg  { color: var(--accent2); }
+  .log-entry.warn .log-msg  { color: var(--warn); }
+  .log-entry.err .log-msg   { color: var(--err-t); }
+  .log-entry.tool .log-msg  { color: var(--accent3); }
+  .log-entry .log-tag { display: inline-block; font-size: 9px; padding: 1px 5px; border-radius: 2px; margin-right: 5px; font-weight: 700; }
+  .tag-mgr  { background: rgba(255,176,32,0.12);   color: var(--warn); }
+  .tag-req  { background: rgba(0,232,122,0.1);    color: var(--accent); }
+  .tag-arch { background: rgba(56,182,255,0.1);   color: var(--accent2); }
+  .tag-eng  { background: rgba(124,106,255,0.1);  color: var(--accent3); }
+  .tag-sec  { background: rgba(255,68,68,0.1);    color: var(--err-t); }
+  .tag-sys  { background: rgba(255,255,255,0.05); color: var(--muted); }
+
+  /* ── PROGRESS BAR ── */
+  .progress-wrap { margin-bottom: 4px; }
+  .progress-track { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-top: 4px; }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px; width: 0%;
+    transition: width 0.5s cubic-bezier(.4,0,.2,1);
+    position: relative;
+  }
+  .progress-fill::after {
+    content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 20px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4));
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+  @keyframes shimmer { 0%,100%{opacity:0} 50%{opacity:1} }
+  .progress-meta { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  /* ── ACTIVE TASK CARD ── */
+  .active-task-card {
+    background: var(--surface); border: 1px solid rgba(0,232,122,0.2);
+    border-radius: 10px; padding: 14px;
+    box-shadow: 0 0 30px rgba(0,232,122,0.05);
+    transition: all 0.3s;
+  }
+  .active-task-card.idle { border-color: var(--border); box-shadow: none; }
+  .atc-label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); margin-bottom: 8px; }
+  .atc-agent { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+  .atc-task  { font-family: var(--mono); font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  .atc-tools { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .tool-pill {
+    font-family: var(--mono); font-size: 9px; font-weight: 700;
+    padding: 3px 8px; border-radius: 4px;
+    background: rgba(124,106,255,0.1); color: var(--accent3);
+    border: 1px solid rgba(124,106,255,0.2);
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes breathe { 0%,100%{opacity:1} 50%{opacity:0.55} }
+  @keyframes fadeSlideIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  .agent-row { animation: fadeSlideIn 0.35s ease forwards; }
+
+  /* ── SCAN INDICATOR ── */
+  .scanning-bar {
+    position: absolute; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--run-t), transparent);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .agent-row.running .scanning-bar { opacity: 1; animation: scan 1.8s ease-in-out infinite; }
+  @keyframes scan { 0%{top:0%} 100%{top:100%} }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width: 900px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .sidebar { position: static; }
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 2000;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    width: 90%; max-width: 800px;
+    max-height: 85vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title {
+    font-size: 16px; font-weight: 700; color: #fff;
+    font-family: var(--mono);
+  }
+  .modal-close {
+    background: transparent; border: none; color: var(--muted);
+    font-size: 20px; cursor: pointer; transition: color 0.15s;
+  }
+  .modal-close:hover { color: #fff; }
+  .modal-body {
+    padding: 20px; overflow-y: auto;
+    font-family: var(--mono); font-size: 12px; line-height: 1.6;
+    color: var(--text); background: var(--surface2);
+    margin: 16px; border-radius: 6px; border: 1px solid var(--border);
+    white-space: pre-wrap;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo-block">
+      <div class="logo-mark">DF</div>
+      <div class="logo-text">
+        <div class="logo-name">DevFoundry</div>
+        <div class="logo-sub">Mission Control · Agent Monitor</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="crew-status">
+        <span class="status-dot" id="global-dot"></span>
+        <span id="global-status">STANDBY</span>
+      </div>
+      <div class="run-controls">
+        <button class="btn btn-ghost" id="reset-btn" onclick="resetCrew()">Reset</button>
+        <button class="btn btn-primary" id="run-btn" onclick="startCrew()">▶ Run Crew</button>
+        <button class="btn btn-danger" id="kill-btn" onclick="killCrew()" style="display: none;">■ Kill Task</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- INPUT -->
+  <div class="input-row">
+    <label>REQ:</label>
+    <input type="text" id="requirements-input" value="Create a REST API for a todo list management system with user authentication and PostgreSQL persistence" placeholder="Enter project requirements...">
+    <label style="margin-left:12px">UI:</label>
+    <input type="text" id="ui-input" value="Gradio" style="width:90px">
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap">
+    <div class="progress-meta">
+      <span id="progress-label" style="font-family:var(--mono);font-size:10px;color:var(--muted)">AWAITING KICKOFF</span>
+      <span id="progress-pct"   style="font-family:var(--mono);font-size:10px;color:var(--muted)">0 / 12</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <br>
+
+  <!-- MAIN -->
+  <div class="main-grid">
+
+    <!-- PIPELINE -->
+    <div>
+      <div class="section-head">Pipeline · 12 Tasks</div>
+      <div class="pipeline" id="pipeline"></div>
+
+      <br>
+      <div class="section-head">Artifact Registry</div>
+      <div id="artifact-registry"></div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+
+      <!-- STATS -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Completed</div>
+          <div class="stat-value green" id="stat-done">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active</div>
+          <div class="stat-value purple" id="stat-active">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Elapsed</div>
+          <div class="stat-value blue" id="stat-elapsed">0:00</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Artifacts</div>
+          <div class="stat-value warn" id="stat-artifacts">0</div>
+        </div>
+      </div>
+
+      <!-- ACTIVE TASK -->
+      <div class="active-task-card idle" id="active-task-card">
+        <div class="atc-label">Currently Executing</div>
+        <div class="atc-agent" id="atc-agent">—</div>
+        <div class="atc-task"  id="atc-task">No active task</div>
+        <div class="atc-tools" id="atc-tools"></div>
+      </div>
+      <!-- LOG -->
+      <div class="log-panel">
+        <div class="log-header">
+          <span class="log-title">System Log</span>
+          <button class="log-clear" onclick="clearLog()">Clear</button>
+        </div>
+        <div class="log-body" id="log-body"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="/frontend/api.js"></script>
+<script src="/frontend/websocket.js"></script>
+
+<!-- ARTIFACT MODAL -->
+<div class="modal-overlay" id="artifact-modal" onclick="if(event.target===this) closeModal()">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-filename">Artifact Viewer</span>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <pre class="modal-body" id="modal-content"></pre>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  STATE
+// ============================================================
+let PIPELINE_STEPS = [];
+let wsClient = null;
+
+const TAG_COLORS = {
+  req: 'tag-req', arch: 'tag-arch', eng: 'tag-eng', sec: 'tag-sec', mgr: 'tag-mgr'
+};
+
+let state = {
+  running: false,
+  currentStep: -1,
+  doneSteps: [],
+  artifacts: [],
+  startTime: null,
+  elapsedTimer: null,
+  taskTimers: {},
+  taskStartTimes: {},
+  activeRunId: null
+};
+
+// ============================================================
+//  INIT
+// ============================================================
+
+function buildPipeline() {
+  const wrap = document.getElementById('pipeline');
+  wrap.innerHTML = '';
+  PIPELINE_STEPS.forEach((step, i) => {
+    if (i > 0) {
+      const conn = document.createElement('div');
+      conn.className = 'connector'; conn.id = `conn-${i}`; wrap.appendChild(conn);
+    }
+    const row = document.createElement('div');
+    row.className = 'agent-row idle';
+    row.id = `row-${step.id}`;
+    row.innerHTML = `
+      <div class="scanning-bar"></div>
+      <div class="agent-index">${String(step.step).padStart(2,'0')}</div>
+      <div class="agent-main">
+        <div class="agent-header">
+          <span class="agent-name">${step.agent}</span>
+          <span class="agent-role">${step.role}</span>
+        </div>
+        <div class="agent-output" id="out-${step.id}">— waiting</div>
+      </div>
+      <div class="agent-meta">
+        <span class="agent-badge badge-idle" id="badge-${step.id}">IDLE</span>
+        <span class="agent-timer" id="timer-${step.id}">—</span>
+      </div>`;
+    wrap.appendChild(row);
+  });
+}
+
+function buildArtifacts() {
+  const reg = document.getElementById('artifact-registry');
+  reg.innerHTML = '';
+  const all = PIPELINE_STEPS.flatMap(s => s.artifacts);
+  if (!all.length) return;
+  const div = document.createElement('div');
+  div.className = 'task-group';
+  div.id = 'artifact-group';
+  div.innerHTML = `
+    <div class="task-group-header" onclick="toggleGroup('artifact-group')">
+      <div class="tg-title"><span>Output Files</span> <span class="tg-step" id="artifact-count-badge">0 / ${all.length}</span></div>
+      <span class="tg-chevron" id="chev-artifact-group">▼</span>
+    </div>
+    <div class="task-group-body open" id="body-artifact-group">
+      ${all.map(a => `
+        <div class="artifact-entry" id="art-${a.replace(/[^a-z0-9]/gi,'_')}">
+          <span class="artifact-icon">${fileIcon(a)}</span>
+          <span class="artifact-path">${a}</span>
+          <span class="artifact-status as-pending" id="ast-${a.replace(/[^a-z0-9]/gi,'_')}">PENDING</span>
+        </div>`).join('')}
+    </div>`;
+  reg.appendChild(div);
+}
+
+function fileIcon(path) {
+  if (path.endsWith('.json')) return '📋';
+  if (path.endsWith('.py'))   return '🐍';
+  if (path.endsWith('.md'))   return '📄';
+  if (path.endsWith('.zip'))  return '📦';
+  if (path.endsWith('.yml') || path.endsWith('.yaml')) return '⚙️';
+  if (path.includes('Dockerfile')) return '🐳';
+  return '📁';
+}
+
+function toggleGroup(id) {
+  const body = document.getElementById(`body-${id}`);
+  const chev = document.getElementById(`chev-${id}`);
+  const open = body.classList.toggle('open');
+  chev.textContent = open ? '▼' : '▶';
+}
+
+// ============================================================
+//  LOG
+// ============================================================
+
+let logStart = null;
+
+function logTs() {
+  if (!logStart) return '00:00';
+  const s = Math.floor((Date.now() - logStart) / 1000);
+  return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
+}
+
+function log(msg, type='info', tag=null) {
+  const body = document.getElementById('log-body');
+  const e = document.createElement('div');
+  e.className = `log-entry ${type}`;
+  const tagHtml = tag ? `<span class="log-tag ${TAG_COLORS[tag] || 'tag-sys'}">${tag.toUpperCase()}</span>` : '';
+  e.innerHTML = `<span class="log-ts">${logTs()}</span><span class="log-msg">${tagHtml}${msg}</span>`;
+  body.appendChild(e);
+  body.scrollTop = body.scrollHeight;
+}
+
+// Ensure globally accessible
+window.clearLog = function() { document.getElementById('log-body').innerHTML = ''; };
+
+// ============================================================
+//  TIMING
+// ============================================================
+
+function startElapsed() {
+  state.startTime = Date.now();
+  state.elapsedTimer = setInterval(() => {
+    const s = Math.floor((Date.now() - state.startTime) / 1000);
+    document.getElementById('stat-elapsed').textContent =
+      Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+  }, 1000);
+}
+
+function stopElapsed() { clearInterval(state.elapsedTimer); }
+
+// ============================================================
+//  PIPELINE EXECUTION
+// ============================================================
+
+async function startCrew() {
+  if (state.running) return;
+  const reqs = document.getElementById('requirements-input').value;
+  const uiFramework = document.getElementById('ui-input').value;
+
+  log('Initiating run request to backend...', 'info', 'mgr');
+  
+  try {
+    const res = await runCrew(reqs, uiFramework);
+    if (res.status === 'started') {
+      state.activeRunId = res.run_id;
+      log(`Run initialized successfully on backend. Run ID: ${res.run_id}`, 'start', 'sys');
+    } else {
+      log(`Failed to initiate run: ${res.detail || 'unknown error'}`, 'err', 'sys');
+    }
+  } catch (e) {
+    log(`Error starting crew execution: ${e.message}`, 'err', 'sys');
+  }
+}
+
+// Ensure globally accessible
+window.startCrew = startCrew;
+
+// ============================================================
+//  EVENT DISPATCHER
+// ============================================================
+
+function handleBackendEvent(event) {
+  const { type, timestamp, payload } = event;
+  if (payload.run_id && state.activeRunId && payload.run_id !== state.activeRunId) {
+    return;
+  }
+
+  if (type === 'crew_started') {
+    state.running = true;
+    logStart = Date.now();
+    state.doneSteps = [];
+    state.artifacts = [];
+
+    document.getElementById('run-btn').style.display = 'none';
+    document.getElementById('kill-btn').style.display = 'inline-block';
+    document.getElementById('kill-btn').disabled = false;
+    document.getElementById('reset-btn').disabled = true;
+    document.getElementById('requirements-input').disabled = true;
+    document.getElementById('ui-input').disabled = true;
+
+    setGlobalStatus('running', 'RUNNING');
+    startElapsed();
+
+    log('Engineering manager online', 'info', 'mgr');
+    log('Kickoff received · hierarchical process', 'start', 'mgr');
+    window.clearLog();
+    
+    resetPipelineElements();
+  }
+
+  else if (type === 'crew_completed') {
+    setGlobalStatus('done', 'COMPLETE');
+    log('All tasks completed successfully', 'done', 'mgr');
+    log('Workspace packaged and ready for delivery', 'done', 'mgr');
+    stopElapsed();
+
+    document.getElementById('reset-btn').disabled = false;
+    document.getElementById('run-btn').disabled = false;
+    document.getElementById('run-btn').style.display = 'inline-block';
+    document.getElementById('kill-btn').style.display = 'none';
+    document.getElementById('requirements-input').disabled = false;
+    document.getElementById('ui-input').disabled = false;
+    setActiveTask(null);
+    state.running = false;
+
+    refreshArtifactsList();
+  }
+
+  else if (type === 'crew_failed') {
+    const isCancelled = payload.error && payload.error.toLowerCase().includes('cancelled');
+    if (isCancelled) {
+      setGlobalStatus('cancelled', 'CANCELLED');
+      log('Crew execution cancelled by user', 'warn', 'mgr');
+    } else {
+      setGlobalStatus('error', 'FAILED');
+      log(`Crew execution failed: ${payload.error}`, 'err', 'mgr');
+    }
+    stopElapsed();
+
+    document.getElementById('reset-btn').disabled = false;
+    document.getElementById('run-btn').disabled = false;
+    document.getElementById('run-btn').style.display = 'inline-block';
+    document.getElementById('kill-btn').style.display = 'none';
+    document.getElementById('requirements-input').disabled = false;
+    document.getElementById('ui-input').disabled = false;
+    setActiveTask(null);
+    state.running = false;
+  }
+
+  else if (type === 'task_started') {
+    const step = PIPELINE_STEPS.find(s => s.id === payload.task);
+    if (step) {
+      markStatus(step.id, 'running');
+      const idx = PIPELINE_STEPS.indexOf(step);
+      if (idx > 0) markConnector(idx, 'active');
+
+      log(`Delegating task: "${step.task}" to ${step.agent}`, 'start', step.tag);
+      setActiveTask(step);
+      document.getElementById('stat-active').textContent = '1';
+
+      state.taskStartTimes[step.id] = Date.now();
+      setOutput(step.id, 'Executing...');
+    }
+  }
+
+  else if (type === 'task_completed') {
+    const step = PIPELINE_STEPS.find(s => s.id === payload.task);
+    if (step) {
+      const startT = state.taskStartTimes[step.id];
+      const elapsed = startT ? ((Date.now() - startT) / 1000).toFixed(1) + 's' : 'Complete';
+      document.getElementById(`timer-${step.id}`).textContent = elapsed;
+
+      markStatus(step.id, 'done');
+      setOutput(step.id, `✓ Complete`);
+      state.doneSteps.push(step.id);
+      
+      const idx = PIPELINE_STEPS.indexOf(step);
+      if (idx > 0) markConnector(idx, 'done');
+
+      log(`${step.agent} completed task`, 'done', step.tag);
+      document.getElementById('stat-done').textContent = state.doneSteps.length;
+      document.getElementById('stat-active').textContent = '0';
+
+      updateProgress(state.doneSteps.length);
+    }
+  }
+
+  else if (type === 'task_failed') {
+    const step = PIPELINE_STEPS.find(s => s.id === payload.task);
+    if (step) {
+      markStatus(step.id, 'error');
+      setOutput(step.id, `✗ Failed: ${payload.error}`);
+      log(`Task ${step.agent} failed: ${payload.error}`, 'err', step.tag);
+      document.getElementById('stat-active').textContent = '0';
+    }
+  }
+
+  else if (type === 'agent_started') {
+    log(`Agent [${payload.agent}] started work`, 'info', 'sys');
+  }
+
+  else if (type === 'agent_completed') {
+    log(`Agent [${payload.agent}] finished work`, 'info', 'sys');
+  }
+
+  else if (type === 'tool_started') {
+    log(`Tool [${payload.tool}] started on ${payload.path || 'workspace'}`, 'tool', 'sys');
+  }
+
+  else if (type === 'tool_completed') {
+    log(`Tool [${payload.tool}] completed`, 'info', 'sys');
+  }
+
+  else if (type === 'tool_failed') {
+    log(`Tool [${payload.tool}] failed: ${payload.error}`, 'err', 'sys');
+  }
+
+  else if (type === 'artifact_written') {
+    markArtifact(payload.path, 'written');
+    if (!state.artifacts.includes(payload.path)) {
+      state.artifacts.push(payload.path);
+      document.getElementById('stat-artifacts').textContent = state.artifacts.length;
+      
+      const badge = document.getElementById('artifact-count-badge');
+      const total = PIPELINE_STEPS.flatMap(s => s.artifacts).length;
+      badge.textContent = `${state.artifacts.length} / ${total}`;
+    }
+    log(`Artifact written: ${payload.path} (${payload.size} chars)`, 'done', 'sys');
+    
+    refreshArtifactsList();
+  }
+
+  else if (type === 'delegation') {
+    log(`Manager delegated: "${payload.task.slice(0, 80)}..." to [${payload.to_agent}]`, 'info', 'mgr');
+  }
+
+  else if (type === 'validation_failed') {
+    log(`Build Validation Defect: ${payload.errors.join(', ')}`, 'err', 'eng');
+  }
+
+  else if (type === 'security_finding') {
+    log(`Security Finding Detected: ${payload.findings.join(', ')}`, 'warn', 'sec');
+  }
+}
+
+async function refreshArtifactsList() {
+  try {
+    const list = await fetchArtifacts(state.activeRunId);
+    list.forEach(art => {
+      markArtifact(art.path, 'written');
+      const key = art.path.replace(/[^a-z0-9]/gi, '_');
+      const entry = document.getElementById(`art-${key}`);
+      if (entry) {
+        entry.style.cursor = 'pointer';
+        entry.style.background = 'rgba(56, 182, 255, 0.03)';
+        entry.onclick = () => showArtifactContent(art.path);
+      }
+    });
+  } catch (e) {
+    console.error("Error updating artifacts list:", e);
+  }
+}
+
+async function showArtifactContent(path) {
+  try {
+    const res = await fetchArtifactContent(path, state.activeRunId);
+    document.getElementById('modal-filename').textContent = path;
+    document.getElementById('modal-content').textContent = res.content;
+    document.getElementById('artifact-modal').classList.add('open');
+  } catch (e) {
+    alert("Error fetching artifact content: " + e.message);
+  }
+}
+
+function closeModal() {
+  document.getElementById('artifact-modal').classList.remove('open');
+}
+
+// Ensure globally accessible
+window.closeModal = closeModal;
+
+function resetPipelineElements() {
+  PIPELINE_STEPS.forEach((step, idx) => {
+    markStatus(step.id, 'idle');
+    setOutput(step.id, '— waiting');
+    document.getElementById(`timer-${step.id}`).textContent = '—';
+    if (idx > 0) markConnector(idx, '');
+  });
+}
+
+// ============================================================
+//  DOM HELPERS
+// ============================================================
+
+function markStatus(id, status) {
+  const row = document.getElementById(`row-${id}`);
+  const badge = document.getElementById(`badge-${id}`);
+  if (row && badge) {
+    row.className = `agent-row ${status}`;
+    badge.className = `agent-badge badge-${status}`;
+    badge.textContent = status.toUpperCase();
+  }
+}
+
+function setOutput(id, text) {
+  const el = document.getElementById(`out-${id}`);
+  if (el) el.innerHTML = text;
+}
+
+function markConnector(index, state) {
+  const conn = document.getElementById(`conn-${index}`);
+  if (conn) conn.className = `connector ${state}`;
+}
+
+function markArtifact(path, status) {
+  const key = path.replace(/[^a-z0-9]/gi,'_');
+  const el = document.getElementById(`ast-${key}`);
+  if (!el) return;
+  const map = { writing: ['WRITING', 'as-writing'], written: ['WRITTEN', 'as-written'], pending: ['PENDING', 'as-pending'] };
+  el.textContent = map[status][0];
+  el.className = `artifact-status ${map[status][1]}`;
+}
+
+function updateProgress(done) {
+  const pct = Math.round((done / PIPELINE_STEPS.length) * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-pct').textContent = `${done} / ${PIPELINE_STEPS.length}`;
+  document.getElementById('progress-label').textContent = done === PIPELINE_STEPS.length ? 'COMPLETE' : `TASK ${done} OF ${PIPELINE_STEPS.length}`;
+}
+
+function setGlobalStatus(status, text) {
+  document.getElementById('global-dot').className = `status-dot ${status}`;
+  document.getElementById('global-status').textContent = text;
+}
+
+function setActiveTask(step) {
+  const card = document.getElementById('active-task-card');
+  if (!step) {
+    card.classList.add('idle');
+    document.getElementById('atc-agent').textContent = '—';
+    document.getElementById('atc-task').textContent = 'No active task';
+    document.getElementById('atc-tools').innerHTML = '';
+    return;
+  }
+  card.classList.remove('idle');
+  document.getElementById('atc-agent').textContent = step.agent;
+  document.getElementById('atc-task').textContent = step.description;
+  document.getElementById('atc-tools').innerHTML = step.tools.map(t =>
+    `<span class="tool-pill">${t}</span>`).join('');
+}
+
+// ============================================================
+//  RESET
+// ============================================================
+
+function resetCrew() {
+  if (state.running) return;
+  state = { running:false, currentStep:-1, doneSteps:[], artifacts:[], startTime:null, elapsedTimer:null, taskTimers:{}, taskStartTimes:{}, activeRunId:null };
+  resetPipelineElements();
+  buildArtifacts();
+  setGlobalStatus('', 'STANDBY');
+  setActiveTask(null);
+  document.getElementById('progress-fill').style.width = '0%';
+  document.getElementById('progress-pct').textContent = '0 / 12';
+  document.getElementById('progress-label').textContent = 'AWAITING KICKOFF';
+  document.getElementById('stat-done').textContent = '0';
+  document.getElementById('stat-active').textContent = '0';
+  document.getElementById('stat-elapsed').textContent = '0:00';
+  document.getElementById('stat-artifacts').textContent = '0';
+  document.getElementById('run-btn').style.display = 'inline-block';
+  document.getElementById('kill-btn').style.display = 'none';
+  window.clearLog();
+  log('System reset · ready for kickoff', 'info', 'sys');
+}
+
+// Ensure globally accessible
+window.resetCrew = resetCrew;
+
+async function killCrew() {
+  if (!state.activeRunId || !state.running) return;
+  
+  log('Sending cancellation request to backend...', 'info', 'sys');
+  document.getElementById('kill-btn').disabled = true;
+  
+  try {
+    const res = await killRun(state.activeRunId);
+    if (res.status === 'cancelled') {
+      log('Cancellation signal accepted by server.', 'info', 'sys');
+    } else {
+      log(`Server response: ${res.message || 'unknown'}`, 'warn', 'sys');
+    }
+  } catch (e) {
+    log(`Error requesting task cancellation: ${e.message}`, 'err', 'sys');
+    document.getElementById('kill-btn').disabled = false;
+  }
+}
+window.killCrew = killCrew;
+
+// ============================================================
+//  STARTUP INITIALIZATION
+// ============================================================
+
+async function initializeMonitor() {
+  log('Initializing monitor configuration...', 'info', 'sys');
+  try {
+    const data = await fetchWorkflow();
+    PIPELINE_STEPS = data.nodes;
+    
+    buildPipeline();
+    buildArtifacts();
+    
+    log(`${PIPELINE_STEPS.length} pipeline tasks loaded from backend`, 'info', 'mgr');
+    log('Ready · press Run Crew to execute real workflow', 'info', 'sys');
+    
+    // Connect WebSocket
+    wsClient = new ObservabilityWS(handleBackendEvent);
+    wsClient.connect();
+    
+  } catch (e) {
+    console.error("Failed to initialize monitor:", e);
+    log(`Initialization failed: ${e.message}`, 'err', 'sys');
+  }
+}
+
+// Run setup
+initializeMonitor();
+</script>
+</body>
+</html>

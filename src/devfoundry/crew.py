@@ -229,6 +229,42 @@ class DevFoundry:
 
     @crew
     def crew(self):
+        analyze_requirements = self.analyze_requirements()
+        analyze_requirements.__dict__["task_id"] = "analyze_requirements"
+
+        design_architecture = self.design_architecture()
+        design_architecture.__dict__["task_id"] = "design_architecture"
+
+        review_architecture = self.review_architecture()
+        review_architecture.__dict__["task_id"] = "review_architecture"
+
+        implement_backend = self.implement_backend()
+        implement_backend.__dict__["task_id"] = "implement_backend"
+
+        review_code = self.review_code()
+        review_code.__dict__["task_id"] = "review_code"
+
+        create_tests = self.create_tests()
+        create_tests.__dict__["task_id"] = "create_tests"
+
+        validate_build = self.validate_build()
+        validate_build.__dict__["task_id"] = "validate_build"
+
+        fix_implementation = self.fix_implementation()
+        fix_implementation.__dict__["task_id"] = "fix_implementation"
+
+        security_review = self.security_review()
+        security_review.__dict__["task_id"] = "security_review"
+
+        generate_ui = self.generate_ui()
+        generate_ui.__dict__["task_id"] = "generate_ui"
+
+        generate_documentation = self.generate_documentation()
+        generate_documentation.__dict__["task_id"] = "generate_documentation"
+
+        package_project = self.package_project()
+        package_project.__dict__["task_id"] = "package_project"
+
         return Crew(
             agents=[
                 self.requirements_analyst(),
@@ -244,18 +280,18 @@ class DevFoundry:
                 self.packaging_engineer(),
             ],
             tasks=[
-                self.analyze_requirements(),
-                self.design_architecture(),
-                self.review_architecture(),
-                self.implement_backend(),
-                self.review_code(),
-                self.create_tests(),
-                self.validate_build(),
-                self.fix_implementation(),
-                self.security_review(),
-                self.generate_ui(),
-                self.generate_documentation(),
-                self.package_project(),
+                analyze_requirements,
+                design_architecture,
+                review_architecture,
+                implement_backend,
+                review_code,
+                create_tests,
+                validate_build,
+                fix_implementation,
+                security_review,
+                generate_ui,
+                generate_documentation,
+                package_project,
             ],
             manager_agent=self.engineering_manager(),
             process=Process.hierarchical,

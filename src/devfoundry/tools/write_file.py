@@ -23,6 +23,10 @@ class WriteFileTool(BaseTool):
         self._workspace = workspace
 
     def _run(self, path: str, content: str) -> str:
+        from devfoundry.observability.event_bus import event_bus
+        if event_bus.is_run_cancelled():
+            raise RuntimeError("Run cancelled by user")
+
         logger.info(
             "[WRITE_FILE] Requested write to '%s'",
             path,
@@ -58,6 +62,13 @@ class WriteFileTool(BaseTool):
             )
 
             self._workspace.write(path, content)
+
+            from devfoundry.observability.event_bus import event_bus
+            from devfoundry.observability import event_types
+            event_bus.publish(event_types.ARTIFACT_WRITTEN, {
+                "path": path,
+                "size": content_size
+            })
 
             logger.info(
                 "[WRITE_FILE] Successfully wrote '%s'",
