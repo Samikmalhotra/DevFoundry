@@ -6,6 +6,8 @@ DevFoundry is a multi-agent software engineering platform built using CrewAI. It
 
 The system follows a structured engineering workflow that mimics a real software development organization, where each stage of the software lifecycle is validated and managed with rich real-time observability.
 
+![DevFoundry Mission Control Dashboard](client/devfoundry_dashboard_actual.png)
+
 ---
 
 # Key Features
